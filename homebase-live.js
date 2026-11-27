@@ -234,5 +234,97 @@
     setInterval(() => {
         if (activeUser && !document.hidden) loadData();
     }, 60000);
+    const glueckCard = document.querySelectorAll('#apps .card')[1];
 
+    glueckCard.querySelectorAll('.metric')[3]?.remove();
+
+    let glueckRequest = 0;
+
+    async function loadGlueck() {
+        const id = ++glueckRequest;
+        const fields = glueckCard.querySelectorAll('.metric b');
+        const info = glueckCard.querySelector('.status');
+
+        fields.forEach(v => v.textContent = '—');
+
+        if (!activeUser) {
+            info.textContent = 'Nicht verbunden';
+            return;
+        }
+
+        try {
+            const { data: members, error: memberError } =
+                await client.from('papa_members')
+                    .select('family_id')
+                    .eq('user_id', activeUser);
+
+            if (memberError) throw memberError;
+            if (members.length !== 1) {
+                throw new Error('Familie nicht eindeutig');
+            }
+
+            const { data, error } =
+                await client.from('papa_settings')
+                    .select('due_date,state_json')
+                    .eq('family_id', members[0].family_id)
+                    .single();
+
+            if (error) throw error;
+            if (id !== glueckRequest || !activeUser) return;
+
+            const today = new Date().toLocaleDateString(
+                'sv-SE', { timeZone: 'Europe/Berlin' }
+            );
+
+            const due = data.due_date || data.state_json?.due;
+            const days = Math.round(
+                (Date.parse(due) - Date.parse(today)) / 86400000
+            );
+
+            if (!Number.isFinite(days)) {
+                throw new Error('Geburtstermin fehlt');
+            }
+
+            const elapsed = Math.max(0, 280 - days);
+
+            fields[0].textContent =
+                'SSW ' + Math.floor(elapsed / 7) +
+                '+' + elapsed % 7;
+
+            fields[1].textContent = Math.max(0, days);
+
+            const appointments =
+                (data.state_json?.appointments || [])
+                    .filter(a => a.date && a.date >= today)
+                    .sort((a, b) => a.date.localeCompare(b.date));
+
+            const next = appointments[0];
+
+            fields[2].textContent = next
+                ? next.date.split('-').reverse().join('.') +
+                  (next.title ? ' · ' + next.title : '')
+                : 'Kein Termin';
+
+            info.textContent = 'Live verbunden ✓';
+            info.style.color = '#16805d';
+
+        } catch (error) {
+            if (id !== glueckRequest) return;
+            fields.forEach(v => v.textContent = '—');
+            info.textContent = 'Verbindung fehlgeschlagen';
+            info.style.color = '#b42318';
+        }
+    }
+
+    client.auth.onAuthStateChange(() => {
+        setTimeout(loadGlueck, 0);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) loadGlueck();
+    });
+
+    setInterval(() => {
+        if (activeUser && !document.hidden) loadGlueck();
+    }, 60000);
 })();
