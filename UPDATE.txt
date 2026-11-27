@@ -1,0 +1,7 @@
+Privat Homebase 2.0 – Update für bestehendes Repository
+Alle Dateien außer dieser Anleitung in das bestehende Repository hochladen und ersetzen. Bestehende SVG-Icons und homebase-weather.js unbedingt behalten. Keine Datenbankänderung nötig, sofern homebase_finance_counts bereits eingerichtet ist.
+Smart Home: Statusfelder vorbereitet, noch keine Shelly-API-Anbindung. Keine Schlüssel im Browser hinterlegen.
+Schichtplan: Startdatum und echte Schichtfolge selbst eingeben. Einstellungen lokal pro Benutzer und Browser gespeichert.
+Verkehr: Google Maps öffnet aktuelle Route; keine eingebettete Live-Fahrzeit.
+Benachrichtigungen: innerhalb der Homebase, keine Push-Mitteilungen.
+Live-Abfragen müssen nach Upload mit dem eigenen Login getestet werden.
