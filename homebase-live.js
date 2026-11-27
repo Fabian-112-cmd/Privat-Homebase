@@ -327,4 +327,80 @@
     setInterval(() => {
         if (activeUser && !document.hidden) loadGlueck();
     }, 60000);
+        const financeCard =
+        document.querySelectorAll('#apps .card')[2];
+
+    financeCard.querySelectorAll('.metric')
+        .forEach(m => m.remove());
+
+    financeCard.querySelector('.status')
+        .insertAdjacentHTML('beforebegin', `
+            <div class="metric">
+                <span>Offene Rechnungen</span>
+                <b>—</b>
+            </div>
+            <div class="metric">
+                <span>Offene Fixkosten</span>
+                <b>—</b>
+            </div>
+        `);
+
+    let financeRequest = 0;
+
+    async function loadFinance() {
+        const id = ++financeRequest;
+        const user = activeUser;
+        const fields =
+            financeCard.querySelectorAll('.metric b');
+        const info =
+            financeCard.querySelector('.status');
+
+        if (!user) {
+            fields.forEach(v => v.textContent = '—');
+            info.textContent = 'Nicht verbunden';
+            return;
+        }
+
+        try {
+            const { data, error } = await client
+                .rpc('homebase_finance_counts');
+
+            if (id !== financeRequest ||
+                activeUser !== user) return;
+
+            if (error) throw error;
+
+            if (!data || !data.length) {
+                throw new Error('Kein Finanzbereich');
+            }
+
+            fields[0].textContent = data[0].open_bills;
+            fields[1].textContent = data[0].open_fixed;
+
+            info.textContent = 'Live verbunden ✓';
+            info.style.color = '#16805d';
+
+        } catch (error) {
+            if (id !== financeRequest ||
+                activeUser !== user) return;
+
+            fields.forEach(v => v.textContent = '—');
+            info.textContent = 'Verbindung fehlgeschlagen';
+            info.style.color = '#b42318';
+        }
+    }
+
+    client.auth.onAuthStateChange(() => {
+        setTimeout(loadFinance, 0);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) loadFinance();
+    });
+
+    setInterval(() => {
+        if (activeUser && !document.hidden) {
+            loadFinance();
+        }
+    }, 60000);
 })();
